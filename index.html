@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f8f3">
+  <title>英语小城 · 探员任务</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">E<span>·</span></div><div><strong>英语小城</strong><small>探员任务部</small></div></div>
+      <div class="side-label">探员档案</div>
+      <div id="profiles" class="profiles"></div>
+      <div class="side-label side-label-nav">导航</div>
+      <nav class="main-nav" aria-label="主要导航">
+        <button type="button" data-action="hub" id="nav-hub"><i data-lucide="map">⌖</i><span>探险地图</span></button>
+        <button type="button" data-action="review" id="nav-review"><i data-lucide="rotate-ccw">↺</i><span>今日复习</span><b id="review-count"></b></button>
+        <button type="button" data-action="parent" id="nav-parent"><i data-lucide="chart-no-axes-column">▥</i><span>家长看板</span></button>
+      </nav>
+      <div class="sidebar-bottom"><span class="little-star">✳</span><span>好奇心是最好的线索。</span></div>
+    </aside>
+    <main class="content">
+      <header class="topbar"><div class="topbar-left"><span class="online-dot"></span><span>探险正在进行</span><span class="topbar-divider">/</span><span id="crumb">任务地图</span></div><div class="topbar-right"><button type="button" class="icon-button sound-button" data-action="sound" aria-label="切换声音" title="切换声音"><i data-lucide="volume-2">🔊</i></button><span class="day-label" id="today"></span></div></header>
+      <div id="view" class="view" aria-live="polite"></div>
+    </main>
+    <aside class="insight" id="insight"></aside>
+  </div>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
