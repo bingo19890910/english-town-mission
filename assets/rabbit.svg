@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 280" role="img" aria-labelledby="title">
+<title id="title">原创兔子探员米米</title>
+<ellipse cx="130" cy="263" rx="79" ry="12" fill="#176c60" opacity=".18"/>
+<path d="M70 155h121c19 14 30 53 20 94H52c-9-41-1-79 18-94z" fill="#f2b553"/>
+<path d="m99 158 31 22 31-22-12 91h-38z" fill="#fff4db"/>
+<path d="m128 181 16 0-4 22-10 8-11-8-4-22z" fill="#3f8c81"/>
+<path d="M67 178c-23 3-34 23-29 54h39l16-36zM193 176c24 3 32 23 29 56h-39l-15-35z" fill="#f4bd65"/>
+<path d="M43 226h35l-2 21H44c-10-2-13-13-1-21zm139 0h35c11 8 8 19-1 21h-32z" fill="#fff8eb"/>
+<path d="M74 246h43v17H75c-8 0-11-8-8-13zm69 0h43l7 4c3 8-2 13-9 13h-41z" fill="#5e4f4c"/>
+<path d="M81 73 64 7c-2-10 10-12 16-5l35 61 23-1 38-60c6-9 18-5 15 6l-14 67c20 13 31 33 31 54 0 35-32 61-79 61-46 0-80-26-80-61 0-23 11-42 32-56z" fill="#fff9ed"/>
+<path d="M79 25 70 13l16 54 14-6zM178 25l8-12-16 55-14-6z" fill="#f5ada4"/>
+<path d="M78 73c36-20 72-20 105 0" fill="none" stroke="#ead9c7" stroke-width="5"/>
+<path d="M83 112c10-7 23-7 33 0m27 0c10-7 22-7 32 0" fill="none" stroke="#7b5550" stroke-width="5" stroke-linecap="round"/>
+<circle cx="99" cy="121" r="6" fill="#424044"/><circle cx="159" cy="121" r="6" fill="#424044"/>
+<ellipse cx="129" cy="136" rx="8" ry="6" fill="#e38e8d"/>
+<path d="M129 143v7m0 0c-6 6-13 5-17 0m17 0c6 6 13 5 17 0" fill="none" stroke="#9a7570" stroke-width="3" stroke-linecap="round"/>
+<circle cx="74" cy="141" r="10" fill="#f5bbbb" opacity=".5"/><circle cx="184" cy="141" r="10" fill="#f5bbbb" opacity=".5"/>
+<path d="M78 74c27-15 78-19 103 0l-6 9c-31-10-66-11-91 0z" fill="#3e847c"/>
+<path d="M127 67c6-2 13 1 15 6s-2 12-9 13c-6 1-12-2-14-7-2-6 2-11 8-12z" fill="#ffe3a2"/>
+<path d="m131 70 2 5 5 1-4 3 1 5-4-3-4 3 1-5-4-3 5-1z" fill="#2c756a"/>
+</svg>
