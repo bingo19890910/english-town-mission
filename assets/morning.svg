@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 440" role="img" aria-labelledby="title">
+<title id="title">晨光中的卧室与任务清单</title>
+<defs>
+ <linearGradient id="wall" x2="0" y2="1"><stop stop-color="#fcefd2"/><stop offset="1" stop-color="#f9dfb5"/></linearGradient>
+ <linearGradient id="window" x2="0" y2="1"><stop stop-color="#a9dcd6"/><stop offset="1" stop-color="#e6f6d6"/></linearGradient>
+ <pattern id="grid" width="34" height="34" patternUnits="userSpaceOnUse"><path d="M34 0H0v34" fill="none" stroke="#ecceaa" stroke-width="1" opacity=".55"/></pattern>
+</defs>
+<rect width="900" height="440" fill="url(#wall)"/><rect width="900" height="440" fill="url(#grid)"/>
+<path d="M0 340h900v100H0z" fill="#d99d6d"/><path d="M0 346h900" stroke="#ae765a" stroke-width="8"/>
+<rect x="458" y="40" width="245" height="214" rx="9" fill="#c99165"/>
+<rect x="469" y="51" width="223" height="192" fill="url(#window)"/>
+<circle cx="573" cy="108" r="48" fill="#ffd673"/><path d="M469 204c56-63 82-40 125-19 51-33 70-20 98 17v41H469z" fill="#7ab7a0"/><path d="M469 220c61-44 89-9 135-22 44-13 70-8 88 14v31H469z" fill="#58a88d"/>
+<path d="M580 51v192M469 144h223" stroke="#d6a77e" stroke-width="11"/>
+<path d="M457 252h246" stroke="#995e4e" stroke-width="10" stroke-linecap="round"/>
+<path d="M57 187h312v165H57z" fill="#ba775b"/><path d="M57 173h318v62H57z" fill="#92bfac"/><path d="M72 184h280v71H72z" fill="#dbe7c3"/>
+<path d="M82 207h116v33H82z" fill="#fff7df"/><path d="M213 206h107v34H213z" fill="#fff7df"/>
+<path d="M53 229h325v102H53z" fill="#f1b17c"/><path d="M75 331v29m282-29v29" stroke="#7a604d" stroke-width="11"/>
+<path d="M59 229h313v24H59z" fill="#fff6dc"/>
+<rect x="731" y="224" width="113" height="18" rx="5" fill="#85594e"/><path d="M746 242v110m82-110v110" stroke="#895e52" stroke-width="10"/>
+<rect x="759" y="152" width="57" height="72" rx="6" fill="#fff7e3"/><circle cx="787" cy="187" r="23" fill="#f6ca72"/><path d="M787 166v21l14 8" fill="none" stroke="#586454" stroke-width="4" stroke-linecap="round"/>
+<rect x="738" y="207" width="15" height="17" fill="#438377"/>
+<path d="M765 207c-10-36 6-55 18-35 10-29 29-28 28 3 14-13 27 3 13 32" fill="#5aa48b"/>
+<path d="M721 346h153" stroke="#ad785a" stroke-width="6" stroke-linecap="round"/>
+<path d="M420 323c52-18 168-21 229 2l47 115H385z" fill="#f4c18e" opacity=".65"/>
+<circle cx="410" cy="89" r="7" fill="#fdf8ed"/><circle cx="740" cy="73" r="5" fill="#fdf8ed"/>
+</svg>
