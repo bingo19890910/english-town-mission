@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 440" role="img" aria-labelledby="title">
+<title id="title">有书桌、盒子和床的绿色房间</title>
+<defs><pattern id="dots" width="35" height="35" patternUnits="userSpaceOnUse"><circle cx="6" cy="6" r="2" fill="#abd1bf" opacity=".4"/></pattern></defs>
+<rect width="900" height="440" fill="#d7eadb"/><rect width="900" height="440" fill="url(#dots)"/>
+<path d="M0 334h900v106H0z" fill="#bc9771"/><path d="M0 338h900" stroke="#8e7762" stroke-width="9"/>
+<rect x="65" y="72" width="221" height="170" rx="6" fill="#f6f1d9" stroke="#99bdac" stroke-width="12"/>
+<path d="M175 77v163M72 156h208" stroke="#9cb7a6" stroke-width="8"/>
+<path d="M75 212c32-44 55-25 92-14 26-34 65-24 111 7v30H75z" fill="#70a991"/><circle cx="125" cy="126" r="26" fill="#fae1a3"/>
+<rect x="81" y="258" width="207" height="16" rx="5" fill="#966750"/><path d="M99 274v78m170-78v78" stroke="#8d614c" stroke-width="10"/>
+<rect x="123" y="233" width="48" height="25" rx="3" fill="#efc967"/><path d="M126 232v-19h43v19" fill="#faf2de" stroke="#6d8b80" stroke-width="4"/>
+<path d="M195 231h50v26h-50z" fill="#f5a982"/><path d="M199 228h53v5h-53" fill="#fff3da"/>
+<rect x="401" y="200" width="429" height="133" rx="17" fill="#8c6b5d"/><rect x="421" y="175" width="398" height="123" rx="20" fill="#f7e6ae"/>
+<path d="M430 236c92-18 185-15 379 5v65H430z" fill="#88bfa9"/><path d="M432 254c110-12 244-5 377 5" fill="none" stroke="#619a89" stroke-width="5"/>
+<path d="M420 328v30m404-31v31" stroke="#7a5d52" stroke-width="15"/>
+<rect x="448" y="182" width="100" height="55" rx="14" fill="#fff7df"/><rect x="555" y="183" width="90" height="55" rx="14" fill="#fff7df"/>
+<path d="M328 275h95v71h-95z" fill="#e9ad71"/><path d="M325 272h101v14H325z" fill="#bc825f"/><path d="M337 290h77v44h-77" fill="none" stroke="#ce916a" stroke-width="4"/>
+<path d="M360 271v-22h32v22" fill="#fff4d7"/><path d="M360 255h34" stroke="#41796f" stroke-width="5"/>
+<rect x="298" y="83" width="120" height="83" rx="4" fill="#f9f5dc" stroke="#d0ab75" stroke-width="9"/>
+<circle cx="333" cy="110" r="13" fill="#f1be67"/><path d="M315 143c23-39 41-8 56-9 16-2 21-18 39-19v43h-95z" fill="#80b4a1"/>
+<path d="M689 101h94v61h-94z" fill="#f7f1dc" stroke="#b48c64" stroke-width="9"/><path d="M710 122h55m-55 20h37" stroke="#86aa9a" stroke-width="7" stroke-linecap="round"/>
+<circle cx="850" cy="92" r="15" fill="#f7dc9e"/>
+</svg>
