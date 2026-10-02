@@ -8,8 +8,8 @@
   };
   const units = Object.assign({
     morning: {
-      id: 'morning', number: '01', name: 'My morning', zh: '我的早晨',
-      scene: 'assets/morning.svg', label: 'UNIT 01 · 早晨线索',
+      id: 'morning', number: '21', name: 'My morning', zh: '我的早晨',
+      scene: 'assets/morning.svg', label: 'UNIT 21 · 早晨线索',
       intro: '清晨的能量钟停住了。帮探员按顺序找回今天的五个动作。',
       words: ['get up', 'brush my teeth', 'wash my face', 'get dressed', 'have breakfast'],
       grammar: {
@@ -38,8 +38,8 @@
       ]
     },
     room: {
-      id: 'room', number: '02', name: 'My room', zh: '我的房间',
-      scene: 'assets/room.svg', label: 'UNIT 02 · 房间线索',
+      id: 'room', number: '22', name: 'My room', zh: '我的房间',
+      scene: 'assets/room.svg', label: 'UNIT 22 · 房间线索',
       intro: '基地里的小物品换了位置。跟着位置词，帮探员整理房间。',
       words: ['on the desk', 'in the box', 'under the bed'],
       grammar: {
@@ -174,7 +174,11 @@
   function recommendedUnit(progress) {
     const due = dueUnits();
     if (due.length) return due[0];
-    return unitOrder.find(function (id) { return !progress.completed.includes(id); }) || unitOrder[0];
+    return nextUnit(progress) || unitOrder[0];
+  }
+
+  function nextUnit(progress) {
+    return unitOrder.find(function (id) { return !progress.completed.includes(id); }) || '';
   }
 
   function renderInsight() {
@@ -201,7 +205,8 @@
     const progress = activeProgress();
     const completeCount = progress.completed.filter(function (id) { return units[id]; }).length;
     const recommendation = recommendedUnit(progress);
-    const cards = unitOrder.map(function (id) { return missionCard(units[id], progress.completed.includes(id)); }).join('');
+    const nextId = nextUnit(progress);
+    const cards = unitOrder.map(function (id) { return missionCard(units[id], progress.completed.includes(id), id === nextId); }).join('');
     view.innerHTML = '<div class="view-heading"><div><div class="eyebrow">小城探险 · 三册总地图</div><h1>' + profile.name + '，今天找哪条线索？</h1><p class="subline">选择一项任务开始。每一关都可以听、看、拼和说。</p></div><div class="overview-pill">已完成 ' + completeCount + ' / ' + TOTAL_UNITS + ' 个任务</div></div>' +
       '<section class="scene"><img class="scene-bg" src="assets/morning.svg" alt="晨光中的探员基地"><div class="scene-copy"><small>THE MORNING SIGNAL</small><h2>晨光信号<br>重新亮起</h2><p>两个探员需要找回散落在城市里的英语线索。</p><button type="button" class="primary-button" data-action="start" data-unit="' + recommendation + '"><i data-lucide="play">▶</i>' + (dueUnits().length ? '复习今日线索' : completeCount === TOTAL_UNITS ? '重玩第一关' : completeCount ? '继续下一关' : '开始第一条线索') + '</button></div><img class="scene-avatar" src="' + profiles.fox.image + '" alt=""><img class="scene-avatar partner" src="' + profiles.rabbit.image + '" alt=""></section>' +
       '<div class="section-title"><h2>全部 30 个任务</h2><span>一年级上 · 一年级下 · 二年级上</span></div>' +
@@ -209,8 +214,9 @@
     bindHubEvents(); refreshIcons();
   }
 
-  function missionCard(unit, done) {
-    return '<button type="button" class="mission" data-action="start" data-unit="' + unit.id + '"><div class="mission-art"><img src="' + unit.scene + '" alt=""><span class="mission-theme-icon" aria-hidden="true">' + esc(unit.icon || '') + '</span><span class="mission-num">' + unit.number + '</span></div><div class="mission-body"><span class="unit-label">' + unit.label + '</span><h3>' + unit.name + '</h3><p>' + unit.zh + ' · ' + (done ? (dueUnits().includes(unit.id) ? '今日待复习' : '已完成，可重玩') : unit.words.slice(0, 3).join(' · ')) + '</p><div class="mission-bottom"><span>' + (done ? '重玩本关' : '开始探险') + '</span><i data-lucide="' + (done ? 'rotate-ccw' : 'arrow-up-right') + '">↗</i></div></div></button>';
+  function missionCard(unit, done, isNext) {
+    const status = done ? (dueUnits().includes(unit.id) ? '今日待复习' : '已完成，可重玩') : isNext ? '下一关 · 推荐' : unit.words.slice(0, 3).join(' · ');
+    return '<button type="button" class="mission ' + (done ? 'completed' : '') + ' ' + (isNext ? 'next' : '') + '" data-action="start" data-unit="' + unit.id + '"><div class="mission-art"><img src="' + unit.scene + '" alt=""><span class="mission-theme-icon" aria-hidden="true">' + esc(unit.icon || '') + '</span><span class="mission-num">' + unit.number + '</span>' + (done ? '<span class="mission-status">✓ 已完成</span>' : isNext ? '<span class="mission-status next-status">下一关</span>' : '') + '</div><div class="mission-body"><span class="unit-label">' + unit.label + '</span><h3>' + unit.name + '</h3><p>' + unit.zh + ' · ' + status + '</p><div class="mission-bottom"><span>' + (done ? '重玩本关' : isNext ? '进入下一关' : '开始探险') + '</span><i data-lucide="' + (done ? 'rotate-ccw' : 'arrow-up-right') + '">↗</i></div></div></button>';
   }
 
   function bindHubEvents() {
@@ -427,11 +433,14 @@
     stopActiveRecording(); currentUnit = null; setActiveNav('roadmap'); crumb.textContent = '学习路线'; renderProfiles(); renderInsight();
     const roadmap = window.GRAMMAR_ROADMAP;
     const volumes = roadmap.volumes.map(function (volume) {
+      const volumeOffset = roadmap.volumes.indexOf(volume) * 10;
+      const nextId = nextUnit(activeProgress());
       const rows = volume.units.map(function (unit, index) {
         const playable = Object.values(units).find(function (entry) { return entry.name === unit[0]; });
         const playableId = playable && playable.id;
         const completed = activeProgress().completed.includes(playableId);
-        return '<div class="roadmap-unit playable"><span class="roadmap-number">' + String(index + 1).padStart(2, '0') + '</span><div><h3>' + esc(unit[0]) + '<b>' + (completed ? '已完成 · 可重玩' : '当前可玩') + '</b></h3><p><strong>主线：</strong>' + esc(unit[1]) + '</p><p><strong>演示：</strong>' + esc(unit[2]) + '</p><p><strong>拓展：</strong>' + esc(unit[3]) + '</p></div><button type="button" class="outline-button" data-roadmap-unit="' + playableId + '">' + (completed ? '重玩' : '进入') + '</button></div>';
+        const isNext = playableId === nextId;
+        return '<div class="roadmap-unit playable ' + (completed ? 'completed' : '') + ' ' + (isNext ? 'next' : '') + '"><span class="roadmap-number">' + String(volumeOffset + index + 1).padStart(2, '0') + '</span><div><h3>' + esc(unit[0]) + '<b>' + (completed ? '已完成 · 可重玩' : isNext ? '下一关 · 推荐' : '待探索') + '</b></h3><p><strong>主线：</strong>' + esc(unit[1]) + '</p><p><strong>演示：</strong>' + esc(unit[2]) + '</p><p><strong>拓展：</strong>' + esc(unit[3]) + '</p></div><button type="button" class="outline-button" data-roadmap-unit="' + playableId + '">' + (completed ? '重玩' : isNext ? '进入下一关' : '进入') + '</button></div>';
       }).join('');
       return '<section class="roadmap-volume"><header><div><span>' + esc(volume.label) + '</span><h2>' + esc(volume.stage) + '</h2></div><strong>10 个单元</strong></header><div class="roadmap-list">' + rows + '</div></section>';
     }).join('');
