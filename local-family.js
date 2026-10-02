@@ -133,7 +133,9 @@
       if (!/^\d{4,6}$/.test(pin)) throw new Error('请输入 4–6 位数字 PIN。');
       const salt = id(), hash = await pinDigest(pin, salt);
       await transaction(s => { if (s.pinHash) parent(s); s.pinSalt = salt; s.pinHash = hash; s.pinFailures = 0; s.pinLockedUntil = 0; });
-      api.lock();
+      unlockedHash = hash;
+      unlockedUntil = Date.now() + 1800000;
+      emit();
     },
     async unlock(pin) {
       const current = load();
