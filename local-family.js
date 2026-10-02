@@ -74,12 +74,14 @@
     state() { try { const s = load(); return { ...s, pinSet: Boolean(s.pinHash), message }; } catch (error) { return { ...base(), pinSet: false, message: error.message, error: true }; } },
     complete(role, unit, stage, wrong) {
       child(role);
-      if (!['morning', 'room'].includes(unit) || !scores[stage]) return Promise.reject(new Error('学习关卡无效。'));
+      const content = window.TownUnitContent && window.TownUnitContent[unit];
+      if (!(['morning', 'room'].includes(unit) || content) || !scores[stage]) return Promise.reject(new Error('学习关卡无效。'));
       return transaction(s => {
         const source = 'stage:first:' + unit + ':' + stage;
         if (s.ledger.some(x => x.child_id === role && x.source_key === source)) return false;
         s.events.push({ id: id(), child_id: role, unit_id: unit, stage_id: stage, wrong_count: Math.max(0, wrong || 0), created_at: now() });
-        entry(s, role, scores[stage], (unit === 'morning' ? '早晨' : '房间') + ' · ' + names[stage], source);
+        const unitName = unit === 'morning' ? '早晨' : unit === 'room' ? '房间' : content.zh;
+        entry(s, role, scores[stage], unitName + ' · ' + names[stage], source);
         return true;
       });
     },
