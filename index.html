@@ -16,7 +16,9 @@
       <div class="side-label side-label-nav">导航</div>
       <nav class="main-nav" aria-label="主要导航">
         <button type="button" data-action="hub" id="nav-hub"><i data-lucide="map">⌖</i><span>探险地图</span></button>
+        <button type="button" data-action="roadmap" id="nav-roadmap"><i data-lucide="book-open">▤</i><span>学习路线</span></button>
         <button type="button" data-action="review" id="nav-review"><i data-lucide="rotate-ccw">↺</i><span>今日复习</span><b id="review-count"></b></button>
+        <button type="button" data-action="wallet" id="nav-wallet"><i data-lucide="gift">🎁</i><span>积分心愿</span></button>
         <button type="button" data-action="parent" id="nav-parent"><i data-lucide="chart-no-axes-column">▥</i><span>家长看板</span></button>
       </nav>
       <div class="sidebar-bottom"><span class="little-star">✳</span><span>好奇心是最好的线索。</span></div>
@@ -27,7 +29,12 @@
     </main>
     <aside class="insight" id="insight"></aside>
   </div>
+  <div class="cloud-banner" id="cloud-status" role="status">本机记录 · 正在读取</div>
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+  <script src="local-family.js" defer></script>
+  <script src="rewards.js" defer></script>
+  <script src="teaching-demos.js" defer></script>
+  <script src="grammar-roadmap.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>
