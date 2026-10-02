@@ -6,7 +6,7 @@
     fox: { id: 'fox', name: '阿洛', title: '晨光探员', image: 'assets/fox.svg', badge: 'A', color: '#e98854' },
     rabbit: { id: 'rabbit', name: '米米', title: '线索探员', image: 'assets/rabbit.svg', badge: 'M', color: '#d89b4f' }
   };
-  const units = {
+  const units = Object.assign({
     morning: {
       id: 'morning', number: '01', name: 'My morning', zh: '我的早晨',
       scene: 'assets/morning.svg', label: 'UNIT 01 · 早晨线索',
@@ -66,7 +66,14 @@
         ] }
       ]
     }
-  };
+  }, window.TownUnitContent || {});
+  const unitOrder = window.GRAMMAR_ROADMAP.volumes.flatMap(function (volume) {
+    return volume.units.map(function (entry) {
+      const match = Object.values(units).find(function (unit) { return unit.name === entry[0]; });
+      return match && match.id;
+    }).filter(Boolean);
+  });
+  const TOTAL_UNITS = unitOrder.length;
 
   const defaultState = {
     activeProfile: 'fox',
@@ -167,24 +174,23 @@
   function recommendedUnit(progress) {
     const due = dueUnits();
     if (due.length) return due[0];
-    if (!progress.completed.includes('morning')) return 'morning';
-    if (!progress.completed.includes('room')) return 'room';
-    return 'morning';
+    return unitOrder.find(function (id) { return !progress.completed.includes(id); }) || unitOrder[0];
   }
 
   function renderInsight() {
     const profile = activeProfile();
     const progress = activeProgress();
-    const percent = Math.round((progress.completed.length / 2) * 100);
+    const completedCount = progress.completed.filter(function (id) { return units[id]; }).length;
+    const percent = Math.round((completedCount / TOTAL_UNITS) * 100);
     const recommendation = recommendedUnit(progress);
-    const recommendationTitle = dueUnits().length ? '复习 ' + units[recommendation].name : progress.completed.length === 2 ? '重玩 My morning' : '开始 ' + units[recommendation].name;
+    const recommendationTitle = dueUnits().length ? '复习 ' + units[recommendation].name : completedCount === TOTAL_UNITS ? '重玩 ' + units[recommendation].name : '开始 ' + units[recommendation].name;
     insight.innerHTML = '<div class="right-title">当前探员</div>' +
       '<div class="insight-profile"><img src="' + profile.image + '" alt=""><div><strong>' + profile.name + '</strong><span>' + profile.title + ' · 今日在线</span></div></div>' +
-      '<div class="ring-wrap"><div class="ring" style="--progress:' + percent + '%"><strong>' + percent + '%</strong></div><div class="ring-copy"><strong>本阶段进度</strong><span>完成两个任务即可<br>解锁下一张地图</span></div></div>' +
+      '<div class="ring-wrap"><div class="ring" style="--progress:' + percent + '%"><strong>' + percent + '%</strong></div><div class="ring-copy"><strong>三册总进度</strong><span>已完成 ' + completedCount + ' / ' + TOTAL_UNITS + '<br>每次一关即可</span></div></div>' +
       '<div class="rule"></div><div class="side-panel-title">今日线索 <span>10—20分钟</span></div>' +
       '<div class="daily-task"><small>推荐任务</small><strong>' + recommendationTitle + '</strong><p>听一听、看一看，再把线索说给探员徽章听。</p><button type="button" data-action="start" data-unit="' + recommendation + '">进入任务 <span>→</span></button></div>' +
       '<div class="coop-note"><small>双人搭档提示</small><p>两个人可以轮换“听线索”和“说台词”。只有一个人时，系统会读出另一位探员的台词。</p></div>' +
-      '<p class="source-note">本页词组依据新版二年级上册公开目录；完整短句为围绕词组编写的原创练习。</p>';
+      '<p class="source-note">三册单元名按已确认目录；未逐页核实的完整短句均为围绕主题编写的原创练习。</p>';
     insight.querySelectorAll('[data-action="start"]').forEach(function (button) { button.addEventListener('click', function () { startUnit(button.dataset.unit); }); });
   }
 
@@ -193,17 +199,18 @@
     renderProfiles(); renderInsight();
     const profile = activeProfile();
     const progress = activeProgress();
-    const completeCount = progress.completed.length;
+    const completeCount = progress.completed.filter(function (id) { return units[id]; }).length;
     const recommendation = recommendedUnit(progress);
-    view.innerHTML = '<div class="view-heading"><div><div class="eyebrow">小城探险 · 第一章</div><h1>' + profile.name + '，今天找哪条线索？</h1><p class="subline">选择一项任务开始。每一关都可以听、看、拼和说。</p></div><div class="overview-pill">已完成 ' + completeCount + ' / 2 个任务</div></div>' +
-      '<section class="scene"><img class="scene-bg" src="assets/morning.svg" alt="晨光中的探员基地"><div class="scene-copy"><small>THE MORNING SIGNAL</small><h2>晨光信号<br>重新亮起</h2><p>两个探员需要找回散落在城市里的英语线索。</p><button type="button" class="primary-button" data-action="start" data-unit="' + recommendation + '"><i data-lucide="play">▶</i>' + (dueUnits().length ? '复习今日线索' : completeCount === 2 ? '再玩一次' : completeCount ? '继续房间任务' : '开始第一条线索') + '</button></div><img class="scene-avatar" src="' + profiles.fox.image + '" alt=""><img class="scene-avatar partner" src="' + profiles.rabbit.image + '" alt=""></section>' +
-      '<div class="section-title"><h2>当前任务</h2><span>二年级上册 · 第一阶段</span></div>' +
-      '<div class="mission-grid">' + missionCard(units.morning, progress.completed.indexOf('morning') >= 0) + missionCard(units.room, progress.completed.indexOf('room') >= 0) + '</div>';
+    const cards = unitOrder.map(function (id) { return missionCard(units[id], progress.completed.includes(id)); }).join('');
+    view.innerHTML = '<div class="view-heading"><div><div class="eyebrow">小城探险 · 三册总地图</div><h1>' + profile.name + '，今天找哪条线索？</h1><p class="subline">选择一项任务开始。每一关都可以听、看、拼和说。</p></div><div class="overview-pill">已完成 ' + completeCount + ' / ' + TOTAL_UNITS + ' 个任务</div></div>' +
+      '<section class="scene"><img class="scene-bg" src="assets/morning.svg" alt="晨光中的探员基地"><div class="scene-copy"><small>THE MORNING SIGNAL</small><h2>晨光信号<br>重新亮起</h2><p>两个探员需要找回散落在城市里的英语线索。</p><button type="button" class="primary-button" data-action="start" data-unit="' + recommendation + '"><i data-lucide="play">▶</i>' + (dueUnits().length ? '复习今日线索' : completeCount === TOTAL_UNITS ? '重玩第一关' : completeCount ? '继续下一关' : '开始第一条线索') + '</button></div><img class="scene-avatar" src="' + profiles.fox.image + '" alt=""><img class="scene-avatar partner" src="' + profiles.rabbit.image + '" alt=""></section>' +
+      '<div class="section-title"><h2>全部 30 个任务</h2><span>一年级上 · 一年级下 · 二年级上</span></div>' +
+      '<div class="mission-grid">' + cards + '</div>';
     bindHubEvents(); refreshIcons();
   }
 
   function missionCard(unit, done) {
-    return '<button type="button" class="mission" data-action="start" data-unit="' + unit.id + '"><div class="mission-art"><img src="' + unit.scene + '" alt=""><span class="mission-num">' + unit.number + '</span></div><div class="mission-body"><span class="unit-label">' + unit.label + '</span><h3>' + unit.name + '</h3><p>' + unit.zh + ' · ' + (done ? (dueUnits().includes(unit.id) ? '今日待复习' : '已完成，可重玩') : unit.words.slice(0, 3).join(' · ')) + '</p><div class="mission-bottom"><span>' + (done ? '重玩本关' : '开始探险') + '</span><i data-lucide="' + (done ? 'rotate-ccw' : 'arrow-up-right') + '">↗</i></div></div></button>';
+    return '<button type="button" class="mission" data-action="start" data-unit="' + unit.id + '"><div class="mission-art"><img src="' + unit.scene + '" alt=""><span class="mission-theme-icon" aria-hidden="true">' + esc(unit.icon || '') + '</span><span class="mission-num">' + unit.number + '</span></div><div class="mission-body"><span class="unit-label">' + unit.label + '</span><h3>' + unit.name + '</h3><p>' + unit.zh + ' · ' + (done ? (dueUnits().includes(unit.id) ? '今日待复习' : '已完成，可重玩') : unit.words.slice(0, 3).join(' · ')) + '</p><div class="mission-bottom"><span>' + (done ? '重玩本关' : '开始探险') + '</span><i data-lucide="' + (done ? 'rotate-ccw' : 'arrow-up-right') + '">↗</i></div></div></button>';
   }
 
   function bindHubEvents() {
@@ -212,6 +219,7 @@
 
   function startUnit(unitId) {
     stopActiveRecording(); currentUnit = units[unitId];
+    if (!currentUnit) { renderHub(); return; }
     const stages = activeProgress().stages[unitId] || [];
     const unfinished = currentUnit.tasks.findIndex(function (task) { return !stages.includes(task.type); });
     stageIndex = unfinished < 0 ? 0 : unfinished; stageDone = false; stageWrong = 0; stageReported = new Set(); setActiveNav('hub'); renderGame();
@@ -407,10 +415,11 @@
   function finishUnit() { const progress = activeProgress(); if (progress.completed.indexOf(currentUnit.id) < 0) progress.completed.push(currentUnit.id); progress.last = currentUnit.name; progress.reviewDue[currentUnit.id] = Date.now() + 24 * 60 * 60 * 1000; saveState(); renderComplete(); }
 
   function renderComplete() {
-    const unit = currentUnit; crumb.textContent = '任务完成'; renderProfiles(); renderInsight(); view.innerHTML = '<div class="game-header"><div><button type="button" class="back-button" data-action="back"><i data-lucide="arrow-left">←</i>返回任务地图</button><div class="eyebrow">MISSION COMPLETE</div><h1>' + unit.name + ' · 线索归档</h1></div></div><div class="complete"><div class="complete-badge">✦</div><h2>这条线索归队了</h2><p>' + activeProfile().name + ' 完成了听音、拼句和角色表达。下一次打开，可以直接复习这组词语。</p><div class="complete-actions"><button type="button" class="primary-button" data-action="next-unit"><i data-lucide="arrow-right">→</i>' + (unit.id === 'morning' ? '进入 My room' : '回到任务地图') + '</button><button type="button" class="outline-button" data-action="replay"><i data-lucide="rotate-ccw">↺</i>再玩一次</button></div></div><div class="phonics"><div class="phonics-mark">✓</div><div><strong>明日复习已安排</strong><p>明天会出现一条轻量复习线索。先休息，探员。</p></div></div>';
+    const unit = currentUnit; const index = unitOrder.indexOf(unit.id); const nextId = index >= 0 && index < unitOrder.length - 1 ? unitOrder[index + 1] : '';
+    crumb.textContent = '任务完成'; renderProfiles(); renderInsight(); view.innerHTML = '<div class="game-header"><div><button type="button" class="back-button" data-action="back"><i data-lucide="arrow-left">←</i>返回任务地图</button><div class="eyebrow">MISSION COMPLETE</div><h1>' + unit.name + ' · 线索归档</h1></div></div><div class="complete"><div class="complete-badge">✦</div><h2>这条线索归队了</h2><p>' + activeProfile().name + ' 完成了听音、拼句和角色表达。下一次打开，可以直接复习这组词语。</p><div class="complete-actions"><button type="button" class="primary-button" data-action="next-unit"><i data-lucide="arrow-right">→</i>' + (nextId ? '进入 ' + esc(units[nextId].name) : '回到任务地图') + '</button><button type="button" class="outline-button" data-action="replay"><i data-lucide="rotate-ccw">↺</i>再玩一次</button></div></div><div class="phonics"><div class="phonics-mark">✓</div><div><strong>明日复习已安排</strong><p>明天会出现一条轻量复习线索。先休息，探员。</p></div></div>';
     const back = view.querySelector('[data-action="back"]'); back.addEventListener('click', renderHub);
     view.querySelector('[data-action="replay"]').addEventListener('click', function () { startUnit(unit.id); });
-    view.querySelector('[data-action="next-unit"]').addEventListener('click', function () { if (unit.id === 'morning') startUnit('room'); else renderHub(); });
+    view.querySelector('[data-action="next-unit"]').addEventListener('click', function () { if (nextId) startUnit(nextId); else renderHub(); });
     refreshIcons();
   }
 
@@ -419,20 +428,32 @@
     const roadmap = window.GRAMMAR_ROADMAP;
     const volumes = roadmap.volumes.map(function (volume) {
       const rows = volume.units.map(function (unit, index) {
-        const playableId = unit[0] === 'My morning' ? 'morning' : unit[0] === 'My room' ? 'room' : '';
-        const completed = playableId && activeProgress().completed.includes(playableId);
-        return '<div class="roadmap-unit ' + (playableId ? 'playable' : '') + '"><span class="roadmap-number">' + String(index + 1).padStart(2, '0') + '</span><div><h3>' + esc(unit[0]) + '<b>' + (playableId ? (completed ? '已完成 · 可重玩' : '当前可玩') : '后续开发') + '</b></h3><p><strong>主线：</strong>' + esc(unit[1]) + '</p><p><strong>演示：</strong>' + esc(unit[2]) + '</p><p><strong>拓展：</strong>' + esc(unit[3]) + '</p></div>' + (playableId ? '<button type="button" class="outline-button" data-roadmap-unit="' + playableId + '">' + (completed ? '重玩' : '进入') + '</button>' : '') + '</div>';
+        const playable = Object.values(units).find(function (entry) { return entry.name === unit[0]; });
+        const playableId = playable && playable.id;
+        const completed = activeProgress().completed.includes(playableId);
+        return '<div class="roadmap-unit playable"><span class="roadmap-number">' + String(index + 1).padStart(2, '0') + '</span><div><h3>' + esc(unit[0]) + '<b>' + (completed ? '已完成 · 可重玩' : '当前可玩') + '</b></h3><p><strong>主线：</strong>' + esc(unit[1]) + '</p><p><strong>演示：</strong>' + esc(unit[2]) + '</p><p><strong>拓展：</strong>' + esc(unit[3]) + '</p></div><button type="button" class="outline-button" data-roadmap-unit="' + playableId + '">' + (completed ? '重玩' : '进入') + '</button></div>';
       }).join('');
       return '<section class="roadmap-volume"><header><div><span>' + esc(volume.label) + '</span><h2>' + esc(volume.stage) + '</h2></div><strong>10 个单元</strong></header><div class="roadmap-list">' + rows + '</div></section>';
     }).join('');
-    view.innerHTML = '<div class="view-heading"><div><div class="eyebrow">30-UNIT ROADMAP · 三册总路线</div><h1>每个单元，只发现一条句子密码</h1><p class="subline">' + esc(roadmap.principle) + '</p></div><div class="overview-pill">已确认 30 个单元</div></div><div class="roadmap-note">当前只有 <strong>My morning</strong> 和 <strong>My room</strong> 已制作成游戏。其他单元展示的是已确认课程架构，不代表已经可以进入。</div>' + volumes;
+    view.innerHTML = '<div class="view-heading"><div><div class="eyebrow">30-UNIT ROADMAP · 三册总路线</div><h1>每个单元，只发现一条句子密码</h1><p class="subline">' + esc(roadmap.principle) + '</p></div><div class="overview-pill">30 个单元均可进入</div></div><div class="roadmap-note">三册共 <strong>30 个探索单元</strong>，每关含听音、拼句、角色表达、场景迁移和可选语法挑战。</div>' + volumes;
     view.querySelectorAll('[data-roadmap-unit]').forEach(function (button) { button.addEventListener('click', function () { startUnit(button.dataset.roadmapUnit); }); });
     refreshIcons();
   }
 
   function renderReview() { stopActiveRecording(); currentUnit = null; setActiveNav('review'); crumb.textContent = '今日复习'; renderProfiles(); renderInsight(); const ids = dueUnits(); const cards = ids.map(function (id) { const unit = units[id]; return '<button type="button" class="mission" data-action="review-unit" data-unit="' + id + '"><div class="mission-art"><img src="' + unit.scene + '" alt=""><span class="mission-num">复习</span></div><div class="mission-body"><span class="unit-label">' + unit.label + '</span><h3>' + unit.name + '</h3><p>重玩本关，巩固听音、拼句和表达。</p><div class="mission-bottom"><span>重玩本关</span><i data-lucide="arrow-up-right">↗</i></div></div></button>'; }).join(''); view.innerHTML = '<div class="view-heading"><div><div class="eyebrow">REVIEW DESK · 今日复习</div><h1>把线索再带回场景</h1><p class="subline">完成后可以重玩整关，复习过的关卡将在次日再次提醒。</p></div></div>' + (cards ? '<div class="mission-grid">' + cards + '</div>' : '<div class="review-empty"><div class="big-icon">☀</div><h2>今天还没有待复习线索</h2><p>完成一项任务，明天这里会出现待复习的关卡。</p><button type="button" class="primary-button" data-action="start" data-unit="morning">开始第一关 <i data-lucide="arrow-right">→</i></button></div>'); view.querySelectorAll('[data-action="review-unit"], [data-action="start"]').forEach(function (button) { button.addEventListener('click', function () { startUnit(button.dataset.unit); }); }); refreshIcons(); }
 
-  function renderParent() { stopActiveRecording(); currentUnit = null; setActiveNav('parent'); crumb.textContent = '家长看板'; renderProfiles(); renderInsight(); const rows = Object.values(profiles).map(function (profile) { const p = state.progress[profile.id]; const percent = Math.round((p.completed.length / 2) * 100); const accuracy = p.attempts ? Math.min(100, Math.round((p.wins / p.attempts) * 100)) : 0; return '<div class="parent-profile"><img src="' + profile.image + '" alt=""><div><h2>' + profile.name + ' <span class="unit-label">' + profile.title + '</span></h2><label><span>阶段进度</span><span class="progress-track" style="width:110px"><i style="width:' + percent + '%"></i></span><strong>' + percent + '%</strong></label><p class="subline">已完成 ' + p.completed.length + ' 个任务 · 最近：' + (p.last || '还未开始') + '</p><p class="stat-line">答题 ' + p.attempts + ' 次 · 答对 ' + p.wins + ' 次 · 正确率 ' + (p.attempts ? accuracy + '%' : '暂无记录') + '</p><p class="stat-line">需要再练：' + (Object.keys(p.errors || {}).filter(function (id) { return p.errors[id]; }).map(function (id) { return units[id].name + ' ' + p.errors[id] + ' 次'; }).join(' · ') || '暂无') + '</p></div></div>'; }).join(''); view.innerHTML = '<div class="view-heading"><div><div class="eyebrow">PARENT VIEW · 低干预陪伴</div><h1>两个探员，各自的成长轨迹</h1><p class="subline">这里只显示学习趋势，不做兄妹排名。</p></div></div><div class="parent-grid"><div class="parent-panel"><h3>本阶段目标</h3><p>二年级上册前两个单元<br><strong>My morning</strong> · <strong>My room</strong></p></div><div class="parent-panel"><h3>建议陪伴</h3><p>每周挑一次任务结尾，让孩子把角色台词说给您听。每天无需陪同完成。</p></div></div><div class="parent-panel" style="margin-top:13px"><h3>探员记录</h3>' + rows + '</div><div class="privacy-note">发音不自动评分；录音仅在本页临时回放，不上传或保存，离开页面即删除。孩子可不录音直接继续。</div>'; refreshIcons(); }
+  function renderParent() {
+    stopActiveRecording(); currentUnit = null; setActiveNav('parent'); crumb.textContent = '家长看板'; renderProfiles(); renderInsight();
+    const rows = Object.values(profiles).map(function (profile) {
+      const p = state.progress[profile.id];
+      const completed = p.completed.filter(function (id) { return units[id]; }).length;
+      const percent = Math.round((completed / TOTAL_UNITS) * 100);
+      const accuracy = p.attempts ? Math.min(100, Math.round((p.wins / p.attempts) * 100)) : 0;
+      const errors = Object.keys(p.errors || {}).filter(function (id) { return units[id] && p.errors[id]; }).map(function (id) { return units[id].name + ' ' + p.errors[id] + ' 次'; }).join(' · ') || '暂无';
+      return '<div class="parent-profile"><img src="' + profile.image + '" alt=""><div><h2>' + profile.name + ' <span class="unit-label">' + profile.title + '</span></h2><label><span>三册进度</span><span class="progress-track" style="width:110px"><i style="width:' + percent + '%"></i></span><strong>' + percent + '%</strong></label><p class="subline">已完成 ' + completed + ' / ' + TOTAL_UNITS + ' 个任务 · 最近：' + (p.last || '还未开始') + '</p><p class="stat-line">答题 ' + p.attempts + ' 次 · 答对 ' + p.wins + ' 次 · 正确率 ' + (p.attempts ? accuracy + '%' : '暂无记录') + '</p><p class="stat-line">需要再练：' + errors + '</p></div></div>';
+    }).join('');
+    view.innerHTML = '<div class="view-heading"><div><div class="eyebrow">PARENT VIEW · 低干预陪伴</div><h1>两个探员，各自的成长轨迹</h1><p class="subline">这里只显示学习趋势，不做兄妹排名。</p></div></div><div class="parent-grid"><div class="parent-panel"><h3>三册学习目标</h3><p>一年级上、下册与二年级上册<br><strong>30 个主题探索单元</strong></p></div><div class="parent-panel"><h3>建议陪伴</h3><p>每周挑一次任务结尾，让孩子把角色台词说给您听。每天无需陪同完成。</p></div></div><div class="parent-panel" style="margin-top:13px"><h3>探员记录</h3>' + rows + '</div><div class="privacy-note">发音不自动评分；录音仅在本页临时回放，不上传或保存，离开页面即删除。孩子可不录音直接继续。</div>'; refreshIcons();
+  }
 
   function shuffle(array) { for (let i = array.length - 1; i > 0; i -= 1) { const j = Math.floor(Math.random() * (i + 1)); const temp = array[i]; array[i] = array[j]; array[j] = temp; } return array; }
 
