@@ -23,7 +23,7 @@
           { label: '她', english: 'She gets up.', chinese: '她起床。' },
           { label: '它 · 小机器人', english: 'It gets up.', chinese: '它起床。' }
         ],
-        tip: '小尾巴提醒：He、She、It 后面的动作会多一个 s：get → gets。先听、先模仿，不用记复杂名称。'
+        tip: '今天先发现 get → gets。早餐的 have → has 会换样子，不能写成 haves；其他变化在后面的单元里慢慢学。'
       },
       phonics: { letter: 'm', sample: 'morning, my', title: '听一听开头音', text: 'morning、my 都从 /m/ 开始。听到 /m/，把它留在探员背包里。' },
       tasks: [
@@ -43,14 +43,14 @@
       intro: '基地里的小物品换了位置。跟着位置词，帮探员整理房间。',
       words: ['on the desk', 'in the box', 'under the bed'],
       grammar: {
-        title: '句子密码 · 问一问',
-        pattern: ['问题词', '+', '小问句'],
-        note: 'Where 问在哪里，What 问是什么，When 问什么时候，How 问怎么样。它们是围绕本关词组的可选侦探挑战，不影响主线通关。',
+        title: '句子密码 · Where 找位置',
+        pattern: ['Where', '+', 'is / are', '+', '物品？'],
+        note: '本关用 Where 找位置。一个物品配 is，多个物品配 are；What 找物品、Whose 找主人作为可选拓展。',
         extensions: [
           { label: 'Where · 哪里', english: 'Where is the book?', answer: 'It is on the desk.', chinese: '书在哪里？它在书桌上。' },
           { label: 'What · 什么', english: 'What is it?', answer: 'It is a pencil.', chinese: '它是什么？它是一支铅笔。' },
-          { label: 'When · 什么时候', english: 'When do you get up?', answer: 'I get up in the morning.', chinese: '你什么时候起床？我早上起床。' },
-          { label: 'How · 怎么样', english: 'How is your room?', answer: 'It is tidy.', chinese: '你的房间怎么样？它很整洁。' }
+          { label: 'Where · 多个物品', english: 'Where are the books?', answer: 'They are in the box.', chinese: '书在哪里？它们在盒子里。' },
+          { label: 'Whose · 谁的', english: 'Whose book is it?', answer: 'It is her book.', chinese: '这是谁的书？这是她的书。' }
         ],
         tip: '先听问题词，再想它在问什么；听到 Where 就找位置，听到 What 就找物品。'
       },
@@ -59,7 +59,7 @@
         { type: 'listen', label: '第一条线索 · 听一听', title: 'Where is the book?', prompt: '听问题，找到书的位置。', audio: 'The book is on the desk.', options: [
           { icon: '🪑', visual: 'desk', text: 'on the desk', correct: true }, { icon: '📦', visual: 'box', text: 'in the box' }, { icon: '🛏️', visual: 'bed', text: 'under the bed' }
         ] },
-        { type: 'build', label: '第二条线索 · 拼一拼', title: '把位置说清楚', prompt: '人物 + 物品 + 位置，线索就完整了。', audio: 'The book is on the desk.', words: ['The book', 'is', 'on the desk.'], answer: ['The book', 'is', 'on the desk.'] },
+        { type: 'build', label: '第二条线索 · 拼一拼', title: '把位置说清楚', prompt: '物品 + is + 位置，线索就完整了。', audio: 'The book is on the desk.', words: ['The book', 'is', 'on the desk.'], answer: ['The book', 'is', 'on the desk.'] },
         { type: 'speak', label: '第三条线索 · 说一说', title: '和搭档互相问答', prompt: '先听问题，再说出完整回答。', audio: 'Where is the ball? It is under the bed.', phrase: 'It is under the bed.' },
         { type: 'transfer', label: '最终线索 · 换一换', title: '盒子里还有什么？', prompt: '看图选择正确的句子。', audio: 'The pencil is in the box.', options: [
           { icon: '✏️', visual: 'box', text: 'The pencil is in the box.', correct: true }, { icon: '✏️', visual: 'desk', text: 'The pencil is on the desk.' }, { icon: '✏️', visual: 'bed', text: 'The pencil is under the bed.' }
@@ -72,14 +72,18 @@
     activeProfile: 'fox',
     sound: true,
     progress: {
-      fox: { completed: [], attempts: 0, wins: 0, last: '', reviewDue: {}, errors: {} },
-      rabbit: { completed: [], attempts: 0, wins: 0, last: '', reviewDue: {}, errors: {} }
+      fox: { completed: [], stages: {}, attempts: 0, wins: 0, last: '', reviewDue: {}, errors: {} },
+      rabbit: { completed: [], stages: {}, attempts: 0, wins: 0, last: '', reviewDue: {}, errors: {} }
     }
   };
   let state = loadState();
   let currentUnit = null;
   let stageIndex = 0;
   let stageDone = false;
+  let stageWrong = 0;
+  let stageReported = new Set();
+  let storageKey = STORAGE_KEY;
+  let pageName = 'hub';
   let mediaRecorder = null;
   let recordUrl = '';
   let recordingRequested = false;
@@ -90,9 +94,9 @@
   const insight = document.getElementById('insight');
   const crumb = document.getElementById('crumb');
 
-  function loadState() {
+  function loadState(key) {
     try {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      const stored = JSON.parse(localStorage.getItem(key || STORAGE_KEY));
       if (!stored) return structuredClone(defaultState);
       const merged = Object.assign({}, defaultState, stored);
       merged.progress = {};
@@ -100,12 +104,19 @@
         merged.progress[id] = Object.assign({}, defaultState.progress[id], (stored.progress && stored.progress[id]) || {});
         merged.progress[id].reviewDue = Object.assign({}, defaultState.progress[id].reviewDue, merged.progress[id].reviewDue || {});
         merged.progress[id].errors = Object.assign({}, defaultState.progress[id].errors, merged.progress[id].errors || {});
+        merged.progress[id].stages = Object.assign({}, merged.progress[id].stages || {});
       });
       return merged;
     } catch (error) { return structuredClone(defaultState); }
   }
 
-  function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  function saveState() {
+    try { localStorage.setItem(storageKey, JSON.stringify(state)); return true; }
+    catch (_) {
+      if (window.TownLocal) window.TownLocal.report(new Error('本机存储失败，本次学习进度未保存。请先导出备份并检查浏览器存储空间。'));
+      return false;
+    }
+  }
   function activeProfile() { return profiles[state.activeProfile]; }
   function activeProgress() { return state.progress[state.activeProfile]; }
   function dueUnits() {
@@ -132,6 +143,8 @@
   }
 
   function setActiveNav(name) {
+    pageName = name;
+    if (window.TownRewards) window.TownRewards.unmount();
     document.querySelectorAll('.main-nav button').forEach(function (button) { button.classList.toggle('active', button.dataset.action === name); });
   }
 
@@ -141,7 +154,14 @@
       const selected = profile.id === state.activeProfile;
       return '<button class="profile ' + (selected ? 'active' : '') + '" type="button" data-profile="' + profile.id + '" aria-pressed="' + selected + '"><img src="' + profile.image + '" alt="' + profile.name + '"><span><strong>' + profile.name + '</strong><small>' + profile.title + '</small></span>' + (selected ? '<span class="profile-check">●</span>' : '') + '</button>';
     }).join('');
-    document.querySelectorAll('[data-profile]').forEach(function (button) { button.addEventListener('click', function () { stopActiveRecording(); state.activeProfile = button.dataset.profile; saveState(); renderHub(); }); });
+    document.querySelectorAll('[data-profile]').forEach(function (button) { button.addEventListener('click', function () {
+      stopActiveRecording(); state.activeProfile = button.dataset.profile; saveState();
+      if (pageName === 'wallet') renderWallet();
+      else if (pageName === 'roadmap') renderRoadmap();
+      else if (pageName === 'review') renderReview();
+      else if (pageName === 'parent') renderParent();
+      else renderHub();
+    }); });
   }
 
   function recommendedUnit(progress) {
@@ -191,7 +211,10 @@
   }
 
   function startUnit(unitId) {
-    stopActiveRecording(); currentUnit = units[unitId]; stageIndex = 0; stageDone = false; setActiveNav('hub'); renderGame();
+    stopActiveRecording(); currentUnit = units[unitId];
+    const stages = activeProgress().stages[unitId] || [];
+    const unfinished = currentUnit.tasks.findIndex(function (task) { return !stages.includes(task.type); });
+    stageIndex = unfinished < 0 ? 0 : unfinished; stageDone = false; stageWrong = 0; stageReported = new Set(); setActiveNav('hub'); renderGame();
   }
 
   function renderGame() {
@@ -200,8 +223,13 @@
     view.innerHTML = '<div class="game-header"><div><button type="button" class="back-button" data-action="back"><i data-lucide="arrow-left">←</i>返回任务地图</button><div class="eyebrow">' + unit.label + '</div><h1>' + unit.name + ' · ' + unit.zh + '</h1></div><span class="mini-tag">线索 ' + (stageIndex + 1) + ' / ' + unit.tasks.length + '</span></div>' +
       '<div class="progress-header"><span>探险进度</span><span>' + Math.round((stageIndex / unit.tasks.length) * 100) + '%</span></div><div class="progress-track"><i style="width:' + Math.round((stageIndex / unit.tasks.length) * 100) + '%"></i></div>' +
       '<div class="game-story"><img src="' + activeProfile().image + '" alt=""><p>' + unit.intro + '</p><button type="button" class="story-audio" data-action="speak" data-speak="' + esc(unit.intro) + '" aria-label="播放中文任务说明" title="播放任务说明"><i data-lucide="volume-2">🔊</i></button></div>' +
-      renderTask(task) + renderGrammar(unit.grammar) + renderPhonics(unit.phonics);
+      renderTask(task) + '<div id="teaching-host">' + window.TownTeaching.render(unit.id) + '</div>' + renderGrammar(unit.grammar) + renderPhonics(unit.phonics);
     bindGameEvents(task); refreshIcons();
+    window.TownTeaching.bind(view.querySelector('#teaching-host'), unit.id, {
+      profile: activeProfile(), speak: speak,
+      completed: function (wrong) { completeStage('grammar', wrong); return stageRewardText('grammar'); },
+      earned: (activeProgress().stages[unit.id] || []).includes('grammar')
+    });
   }
 
   function renderTask(task) {
@@ -235,11 +263,12 @@
   function bindAnswerEvents() {
     view.querySelectorAll('.answer').forEach(function (button) { button.addEventListener('click', function () {
       const feedback = document.getElementById('feedback'); const correct = button.dataset.answer === 'correct';
+      if (stageDone) return;
       activeProgress().attempts += 1;
       view.querySelectorAll('.answer').forEach(function (option) { option.disabled = true; });
       button.classList.add(correct ? 'correct' : 'wrong');
-      if (!correct) { activeProgress().errors[currentUnit.id] = (activeProgress().errors[currentUnit.id] || 0) + 1; saveState(); feedback.hidden = false; feedback.className = 'feedback error'; feedback.innerHTML = '<strong>再听一次，线索还在这里。</strong><button type="button" data-action="retry">重新选择</button>'; feedback.querySelector('[data-action="retry"]').addEventListener('click', function () { renderGame(); }); return; }
-      stageDone = true; activeProgress().wins += 1; feedback.hidden = false; feedback.className = 'feedback success'; feedback.innerHTML = '<strong>找到了！这条线索已经放进背包。</strong><button type="button" data-action="next">下一条线索 →</button>'; feedback.querySelector('[data-action="next"]').addEventListener('click', nextStage); saveState();
+      if (!correct) { stageWrong += 1; activeProgress().errors[currentUnit.id] = (activeProgress().errors[currentUnit.id] || 0) + 1; saveState(); feedback.hidden = false; feedback.className = 'feedback error'; feedback.innerHTML = '<strong>再听一次，线索还在这里。</strong><button type="button" data-action="retry">重新选择</button>'; feedback.querySelector('[data-action="retry"]').addEventListener('click', function () { renderGame(); }); return; }
+      stageDone = true; activeProgress().wins += 1; completeStage(currentUnit.tasks[stageIndex].type, stageWrong); feedback.hidden = false; feedback.className = 'feedback success'; feedback.innerHTML = '<strong>找到了！' + stageRewardText(currentUnit.tasks[stageIndex].type) + '</strong><button type="button" data-action="next">下一条线索 →</button>'; feedback.querySelector('[data-action="next"]').addEventListener('click', nextStage); saveState();
     }); });
   }
 
@@ -247,7 +276,7 @@
     const area = document.getElementById('word-area'); const bank = document.getElementById('word-bank'); const check = view.querySelector('[data-action="check-words"]'); let chosen = [];
     bank.querySelectorAll('.word-chip').forEach(function (button) { button.addEventListener('click', function () { if (button.classList.contains('placed')) return; chosen.push(button.dataset.word); button.classList.add('placed'); area.querySelector('.word-placeholder')?.remove(); const chip = document.createElement('span'); chip.className = 'word-chip placed'; chip.textContent = button.dataset.word; area.appendChild(chip); check.disabled = false; }); });
     view.querySelector('[data-action="clear-words"]').addEventListener('click', function () { renderGame(); });
-    check.addEventListener('click', function () { const feedback = document.getElementById('feedback'); const correct = chosen.length === task.answer.length && chosen.join('|') === task.answer.join('|'); activeProgress().attempts += 1; if (!correct) { activeProgress().errors[currentUnit.id] = (activeProgress().errors[currentUnit.id] || 0) + 1; saveState(); feedback.hidden = false; feedback.className = 'feedback error'; feedback.innerHTML = '<strong>顺序还需要调整。想想谁先出现，再听一遍示范。</strong><button type="button" data-action="reset-build">重新拼</button>'; feedback.querySelector('[data-action="reset-build"]').addEventListener('click', function () { renderGame(); }); return; } stageDone = true; activeProgress().wins += 1; feedback.hidden = false; feedback.className = 'feedback success'; feedback.innerHTML = '<strong>句子完整，线索清楚了！</strong><button type="button" data-action="next">下一条线索 →</button>'; feedback.querySelector('[data-action="next"]').addEventListener('click', nextStage); check.disabled = true; saveState(); });
+    check.addEventListener('click', function () { const feedback = document.getElementById('feedback'); const correct = chosen.length === task.answer.length && chosen.join('|') === task.answer.join('|'); activeProgress().attempts += 1; if (!correct) { stageWrong += 1; activeProgress().errors[currentUnit.id] = (activeProgress().errors[currentUnit.id] || 0) + 1; saveState(); feedback.hidden = false; feedback.className = 'feedback error'; feedback.innerHTML = '<strong>顺序还需要调整。想想谁先出现，再听一遍示范。</strong><button type="button" data-action="reset-build">重新拼</button>'; feedback.querySelector('[data-action="reset-build"]').addEventListener('click', function () { renderGame(); }); return; } stageDone = true; activeProgress().wins += 1; completeStage('build', stageWrong); feedback.hidden = false; feedback.className = 'feedback success'; feedback.innerHTML = '<strong>句子完整！' + stageRewardText('build') + '</strong><button type="button" data-action="next">下一条线索 →</button>'; feedback.querySelector('[data-action="next"]').addEventListener('click', nextStage); check.disabled = true; saveState(); });
   }
 
   function bindSpeechEvents(task) {
@@ -267,8 +296,9 @@
       stopActiveRecording(); stageDone = true;
       view.querySelector('[data-action="complete-speech"]').disabled = true;
       feedback.hidden = false; feedback.className = 'feedback success';
-      feedback.innerHTML = '<strong>台词已完成；这里不自动判断发音。</strong><button type="button" data-action="next">下一条线索 →</button>';
+      feedback.innerHTML = '<strong>台词已完成，不自动判断发音。' + stageRewardText('speak') + '</strong><button type="button" data-action="next">下一条线索 →</button>';
       feedback.querySelector('[data-action="next"]').addEventListener('click', nextStage);
+      completeStage('speak', 0);
     });
   }
 
@@ -291,7 +321,88 @@
   function stopRecording() { recordingRequested = false; if (!mediaRecorder) recordingEpoch += 1; if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); mediaRecorder = null; resetRecordButton(); }
   function stopActiveRecording() { recordingRequested = false; recordingEpoch += 1; if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); mediaRecorder = null; if (recordingStream) recordingStream.getTracks().forEach(function (track) { track.stop(); }); recordingStream = null; if (recordUrl) URL.revokeObjectURL(recordUrl); recordUrl = ''; }
 
-  function nextStage() { stopActiveRecording(); if (stageIndex >= currentUnit.tasks.length - 1) { finishUnit(); return; } stageIndex += 1; stageDone = false; renderGame(); }
+  function nextStage() { if (!stageDone) return; stopActiveRecording(); if (stageIndex >= currentUnit.tasks.length - 1) { finishUnit(); return; } stageIndex += 1; stageDone = false; stageWrong = 0; stageReported = new Set(); renderGame(); }
+
+  function stagePoints(stage) { return ({ listen: 2, build: 3, speak: 2, transfer: 4, grammar: 5 })[stage] || 0; }
+
+  function stageRewardText(stage) {
+    return '首次奖励 ' + stagePoints(stage) + ' 分，重玩不重复发分；本机保存成功后可在积分页查看。';
+  }
+
+  function completeStage(stage, wrong) {
+    const progress = activeProgress();
+    if (stageReported.has(stage)) return;
+    stageReported.add(stage);
+    const stages = progress.stages[currentUnit.id] || [];
+    if (!stages.includes(stage)) progress.stages[currentUnit.id] = Array.from(new Set(stages.concat(stage)));
+    saveState();
+    if (window.TownLocal) window.TownLocal.complete(state.activeProfile, currentUnit.id, stage, wrong).catch(function (error) {
+      stageReported.delete(stage);
+      window.TownLocal.report(error);
+    });
+  }
+
+  function renderWallet() {
+    stopActiveRecording(); currentUnit = null; setActiveNav('wallet'); crumb.textContent = '积分心愿'; renderProfiles(); renderInsight();
+    window.TownRewards.mount(view, { profile: activeProfile, backup: function () { return structuredClone(state); }, legacy: legacyProgress });
+    refreshIcons();
+  }
+
+  function legacyProgress(role) { return loadState(STORAGE_KEY).progress[role]; }
+
+  function applyCloud(snapshot, pending) {
+    const targetKey = STORAGE_KEY + ':family:' + snapshot.family.familyId;
+    if (storageKey !== targetKey) {
+      const previousProfile = state.activeProfile, previousSound = state.sound;
+      storageKey = targetKey; state = loadState(targetKey);
+      state.activeProfile = previousProfile; state.sound = previousSound;
+    }
+    snapshot.family.children.forEach(function (child) {
+      if (!profiles[child.roleKey]) return;
+      const events = snapshot.events.filter(function (event) { return event.child_id === child.id; }).map(function (event) {
+        return { unit: event.unit_id, stage: event.stage_id, wrong: event.wrong_count, time: event.client_completed_at || event.received_at };
+      }).concat((pending || []).filter(function (event) { return event.childId === child.id; }).map(function (event) {
+        return { unit: event.unit, stage: event.stage, wrong: event.wrongCount, time: event.completedAt };
+      }));
+      const legacy = (snapshot.legacy || []).find(function (entry) { return entry.child_id === child.id; });
+      const p = structuredClone(defaultState.progress[child.roleKey]);
+      if (legacy) Object.assign(p, legacy.progress);
+      p.stages = {}; p.errors = Object.assign({}, p.errors); p.reviewDue = Object.assign({}, p.reviewDue);
+      p.completed = (p.completed || []).filter(function (id) { return units[id]; });
+      const latest = {};
+      events.forEach(function (event) {
+        if (!units[event.unit]) return;
+        p.stages[event.unit] = Array.from(new Set((p.stages[event.unit] || []).concat(event.stage)));
+        if (event.stage !== 'speak' && event.stage !== 'grammar') { p.wins += 1; p.attempts += 1 + (event.wrong || 0); }
+        p.errors[event.unit] = (p.errors[event.unit] || 0) + (event.wrong || 0);
+        latest[event.unit] = Math.max(latest[event.unit] || 0, Date.parse(event.time) || 0);
+      });
+      Object.keys(p.stages).forEach(function (id) {
+        if (units[id].tasks.every(function (task) { return p.stages[id].includes(task.type); })) {
+          if (!p.completed.includes(id)) p.completed.push(id);
+          p.reviewDue[id] = latest[id] + 86400000;
+        }
+      });
+      const lastUnit = Object.keys(latest).sort(function (a, b) { return latest[b] - latest[a]; })[0];
+      if (lastUnit) p.last = units[lastUnit].name;
+      state.progress[child.roleKey] = p;
+    });
+    saveState(); renderProfiles(); renderInsight();
+    if (!currentUnit && pageName === 'hub') renderHub();
+    if (!currentUnit && pageName === 'parent') renderParent();
+    if (!currentUnit && pageName === 'review') renderReview();
+    if (!currentUnit && pageName === 'roadmap') renderRoadmap();
+  }
+
+  function resetCloudView() {
+    storageKey = STORAGE_KEY; state = loadState();
+    stopActiveRecording(); currentUnit = null;
+    if (pageName === 'wallet') { renderProfiles(); renderInsight(); }
+    else if (pageName === 'roadmap') renderRoadmap();
+    else if (pageName === 'review') renderReview();
+    else if (pageName === 'parent') renderParent();
+    else renderHub();
+  }
 
   function finishUnit() { const progress = activeProgress(); if (progress.completed.indexOf(currentUnit.id) < 0) progress.completed.push(currentUnit.id); progress.last = currentUnit.name; progress.reviewDue[currentUnit.id] = Date.now() + 24 * 60 * 60 * 1000; saveState(); renderComplete(); }
 
@@ -303,16 +414,33 @@
     refreshIcons();
   }
 
+  function renderRoadmap() {
+    stopActiveRecording(); currentUnit = null; setActiveNav('roadmap'); crumb.textContent = '学习路线'; renderProfiles(); renderInsight();
+    const roadmap = window.GRAMMAR_ROADMAP;
+    const volumes = roadmap.volumes.map(function (volume) {
+      const rows = volume.units.map(function (unit, index) {
+        const playableId = unit[0] === 'My morning' ? 'morning' : unit[0] === 'My room' ? 'room' : '';
+        const completed = playableId && activeProgress().completed.includes(playableId);
+        return '<div class="roadmap-unit ' + (playableId ? 'playable' : '') + '"><span class="roadmap-number">' + String(index + 1).padStart(2, '0') + '</span><div><h3>' + esc(unit[0]) + '<b>' + (playableId ? (completed ? '已完成 · 可重玩' : '当前可玩') : '后续开发') + '</b></h3><p><strong>主线：</strong>' + esc(unit[1]) + '</p><p><strong>演示：</strong>' + esc(unit[2]) + '</p><p><strong>拓展：</strong>' + esc(unit[3]) + '</p></div>' + (playableId ? '<button type="button" class="outline-button" data-roadmap-unit="' + playableId + '">' + (completed ? '重玩' : '进入') + '</button>' : '') + '</div>';
+      }).join('');
+      return '<section class="roadmap-volume"><header><div><span>' + esc(volume.label) + '</span><h2>' + esc(volume.stage) + '</h2></div><strong>10 个单元</strong></header><div class="roadmap-list">' + rows + '</div></section>';
+    }).join('');
+    view.innerHTML = '<div class="view-heading"><div><div class="eyebrow">30-UNIT ROADMAP · 三册总路线</div><h1>每个单元，只发现一条句子密码</h1><p class="subline">' + esc(roadmap.principle) + '</p></div><div class="overview-pill">已确认 30 个单元</div></div><div class="roadmap-note">当前只有 <strong>My morning</strong> 和 <strong>My room</strong> 已制作成游戏。其他单元展示的是已确认课程架构，不代表已经可以进入。</div>' + volumes;
+    view.querySelectorAll('[data-roadmap-unit]').forEach(function (button) { button.addEventListener('click', function () { startUnit(button.dataset.roadmapUnit); }); });
+    refreshIcons();
+  }
+
   function renderReview() { stopActiveRecording(); currentUnit = null; setActiveNav('review'); crumb.textContent = '今日复习'; renderProfiles(); renderInsight(); const ids = dueUnits(); const cards = ids.map(function (id) { const unit = units[id]; return '<button type="button" class="mission" data-action="review-unit" data-unit="' + id + '"><div class="mission-art"><img src="' + unit.scene + '" alt=""><span class="mission-num">复习</span></div><div class="mission-body"><span class="unit-label">' + unit.label + '</span><h3>' + unit.name + '</h3><p>重玩本关，巩固听音、拼句和表达。</p><div class="mission-bottom"><span>重玩本关</span><i data-lucide="arrow-up-right">↗</i></div></div></button>'; }).join(''); view.innerHTML = '<div class="view-heading"><div><div class="eyebrow">REVIEW DESK · 今日复习</div><h1>把线索再带回场景</h1><p class="subline">完成后可以重玩整关，复习过的关卡将在次日再次提醒。</p></div></div>' + (cards ? '<div class="mission-grid">' + cards + '</div>' : '<div class="review-empty"><div class="big-icon">☀</div><h2>今天还没有待复习线索</h2><p>完成一项任务，明天这里会出现待复习的关卡。</p><button type="button" class="primary-button" data-action="start" data-unit="morning">开始第一关 <i data-lucide="arrow-right">→</i></button></div>'); view.querySelectorAll('[data-action="review-unit"], [data-action="start"]').forEach(function (button) { button.addEventListener('click', function () { startUnit(button.dataset.unit); }); }); refreshIcons(); }
 
   function renderParent() { stopActiveRecording(); currentUnit = null; setActiveNav('parent'); crumb.textContent = '家长看板'; renderProfiles(); renderInsight(); const rows = Object.values(profiles).map(function (profile) { const p = state.progress[profile.id]; const percent = Math.round((p.completed.length / 2) * 100); const accuracy = p.attempts ? Math.min(100, Math.round((p.wins / p.attempts) * 100)) : 0; return '<div class="parent-profile"><img src="' + profile.image + '" alt=""><div><h2>' + profile.name + ' <span class="unit-label">' + profile.title + '</span></h2><label><span>阶段进度</span><span class="progress-track" style="width:110px"><i style="width:' + percent + '%"></i></span><strong>' + percent + '%</strong></label><p class="subline">已完成 ' + p.completed.length + ' 个任务 · 最近：' + (p.last || '还未开始') + '</p><p class="stat-line">答题 ' + p.attempts + ' 次 · 答对 ' + p.wins + ' 次 · 正确率 ' + (p.attempts ? accuracy + '%' : '暂无记录') + '</p><p class="stat-line">需要再练：' + (Object.keys(p.errors || {}).filter(function (id) { return p.errors[id]; }).map(function (id) { return units[id].name + ' ' + p.errors[id] + ' 次'; }).join(' · ') || '暂无') + '</p></div></div>'; }).join(''); view.innerHTML = '<div class="view-heading"><div><div class="eyebrow">PARENT VIEW · 低干预陪伴</div><h1>两个探员，各自的成长轨迹</h1><p class="subline">这里只显示学习趋势，不做兄妹排名。</p></div></div><div class="parent-grid"><div class="parent-panel"><h3>本阶段目标</h3><p>二年级上册前两个单元<br><strong>My morning</strong> · <strong>My room</strong></p></div><div class="parent-panel"><h3>建议陪伴</h3><p>每周挑一次任务结尾，让孩子把角色台词说给您听。每天无需陪同完成。</p></div></div><div class="parent-panel" style="margin-top:13px"><h3>探员记录</h3>' + rows + '</div><div class="privacy-note">发音不自动评分；录音仅在本页临时回放，不上传或保存，离开页面即删除。孩子可不录音直接继续。</div>'; refreshIcons(); }
 
   function shuffle(array) { for (let i = array.length - 1; i > 0; i -= 1) { const j = Math.floor(Math.random() * (i + 1)); const temp = array[i]; array[i] = array[j]; array[j] = temp; } return array; }
 
-  document.querySelectorAll('[data-action="hub"], [data-action="review"], [data-action="parent"]').forEach(function (button) { button.addEventListener('click', function () { if (button.dataset.action === 'hub') renderHub(); if (button.dataset.action === 'review') renderReview(); if (button.dataset.action === 'parent') renderParent(); }); });
+  document.querySelectorAll('[data-action="hub"], [data-action="roadmap"], [data-action="review"], [data-action="wallet"], [data-action="parent"]').forEach(function (button) { button.addEventListener('click', function () { if (button.dataset.action === 'hub') renderHub(); if (button.dataset.action === 'roadmap') renderRoadmap(); if (button.dataset.action === 'review') renderReview(); if (button.dataset.action === 'wallet') renderWallet(); if (button.dataset.action === 'parent') renderParent(); }); });
   document.querySelector('[data-action="sound"]').addEventListener('click', function () { state.sound = !state.sound; saveState(); document.querySelector('.sound-button').classList.toggle('off', !state.sound); if (!state.sound && 'speechSynthesis' in window) window.speechSynthesis.cancel(); });
   document.querySelector('.sound-button').classList.toggle('off', !state.sound);
   window.addEventListener('pagehide', stopActiveRecording);
   document.getElementById('today').textContent = todayText();
   renderHub();
+  window.TownLocal.init();
 }());
