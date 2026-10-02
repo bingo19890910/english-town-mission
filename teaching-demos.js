@@ -31,11 +31,57 @@
       '<div class="demo-challenge"><strong>可选挑战 · 首次成功 5 分</strong><p>📘📘 两本书：Where ___ the books?</p><div><button type="button" data-demo-answer="wrong">🔊 is</button><button type="button" data-demo-answer="correct">🔊 are</button></div><span class="demo-feedback" role="status"></span></div></section>';
   }
 
-  function render(unitId) { return unitId === 'morning' ? morning() : room(); }
+  function generic(unitId) {
+    var unit = window.TownUnitContent && window.TownUnitContent[unitId];
+    if (!unit) return '';
+    var demo = unit.demo;
+    return '<section class="teaching-demo generic-demo" aria-label="' + esc(unit.name) + ' 互动演示">' +
+      '<div class="demo-heading"><div><span class="grammar-kicker">点场景，让句子动起来</span><h3>' + esc(unit.grammar.title) + '</h3><p>每次只观察一个变化，再跟着角色读。</p></div><span class="demo-badge">互动小剧场</span></div>' +
+      '<div class="generic-demo-stage"><div class="generic-demo-icon" id="generic-demo-icon">' + esc(demo.steps[0][0]) + '</div><div><span id="generic-demo-label">' + esc(demo.steps[0][1]) + '</span><strong id="generic-demo-sentence">' + esc(demo.steps[0][2]) + '</strong></div></div>' +
+      '<div class="demo-choice" role="group" aria-label="切换演示">' + demo.steps.map(function (step, index) { return '<button type="button" class="' + (index ? '' : 'active') + '" data-generic-step="' + index + '">' + esc(step[0] + ' ' + step[1]) + '</button>'; }).join('') + '</div>' +
+      '<p class="demo-explain" id="generic-demo-explain">' + esc(demo.steps[0][3]) + '</p>' +
+      '<div class="demo-choice"><button type="button" data-demo-audio="explain">🔊 听中文讲解</button><button type="button" data-demo-audio="sentence">🔊 听英语句子</button></div>' +
+      '<details class="demo-extra"><summary>可选拓展 · 再往前一步</summary><p><strong>' + esc(demo.extra[0]) + '</strong></p><p>' + esc(demo.extra[1]) + '</p><button type="button" class="outline-button" data-demo-audio="extra">🔊 听拓展例句</button></details>' +
+      '<div class="demo-challenge"><strong>可选挑战 · 首次成功 5 分</strong><p>' + esc(demo.quiz[0]) + '</p><div><button type="button" data-demo-answer="wrong">🔊 ' + esc(demo.quiz[1]) + '</button><button type="button" data-demo-answer="correct">🔊 ' + esc(demo.quiz[2]) + '</button></div><span class="demo-feedback" role="status"></span></div></section>';
+  }
+
+  function render(unitId) { return unitId === 'morning' ? morning() : unitId === 'room' ? room() : generic(unitId); }
 
   function bind(root, unitId, api) {
     if (!root) return;
     var sentence = '', explanation = '', toolExplanation = '';
+    if (unitId !== 'morning' && unitId !== 'room') {
+      var unit = window.TownUnitContent && window.TownUnitContent[unitId];
+      if (!unit) return;
+      var selected = 0;
+      sentence = unit.demo.steps[0][2]; explanation = unit.demo.steps[0][3];
+      function updateGeneric(index) {
+        selected = index;
+        var step = unit.demo.steps[index]; sentence = step[2]; explanation = step[3];
+        root.querySelector('#generic-demo-icon').textContent = step[0];
+        root.querySelector('#generic-demo-label').textContent = step[1];
+        root.querySelector('#generic-demo-sentence').textContent = step[2];
+        root.querySelector('#generic-demo-explain').textContent = step[3];
+        root.querySelectorAll('[data-generic-step]').forEach(function (button) { button.classList.toggle('active', Number(button.dataset.genericStep) === selected); });
+      }
+      root.querySelectorAll('[data-generic-step]').forEach(function (button) { button.addEventListener('click', function () { updateGeneric(Number(button.dataset.genericStep)); api.speak(sentence); }); });
+      root.querySelectorAll('[data-demo-audio]').forEach(function (button) { button.addEventListener('click', function () {
+        api.speak(button.dataset.demoAudio === 'sentence' ? sentence : button.dataset.demoAudio === 'extra' ? unit.demo.extra[0] : explanation);
+      }); });
+      var genericWrong = 0;
+      root.querySelectorAll('[data-demo-answer]').forEach(function (button) {
+        button.disabled = Boolean(api.earned);
+        button.addEventListener('click', function () {
+          var feedback = root.querySelector('.demo-feedback');
+          if (button.dataset.demoAnswer === 'wrong') { genericWrong += 1; button.classList.add('wrong'); feedback.textContent = '再切换一次场景看看，不扣分。'; api.speak(unit.demo.quiz[1]); return; }
+          root.querySelectorAll('[data-demo-answer]').forEach(function (item) { item.disabled = true; });
+          button.classList.add('correct'); api.speak(unit.demo.quiz[2]);
+          feedback.textContent = '挑战完成！' + (api.earned ? '' : (api.completed(genericWrong) || ''));
+        });
+      });
+      if (api.earned) root.querySelector('.demo-feedback').textContent = '这项加分挑战已经完成。';
+      return;
+    }
     if (unitId === 'morning') {
       var copy = {
         I: ['🦊', 'I get up.', 'I 是我。说自己时，动作词保持原样：get up。'],
