@@ -50,7 +50,7 @@
   const units = {};
   groups.forEach(function ([volume, entries]) {
     entries.forEach(function (item, index) {
-      const number = String(index + 1).padStart(2, '0');
+      const number = String((volume === '1a' ? 0 : volume === '1b' ? 10 : 22) + index + 1).padStart(2, '0');
       const tokens = item.build;
       const full = tokens.join(' ');
       const choices = [item.word].concat(item.other);
