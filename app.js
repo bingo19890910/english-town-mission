@@ -12,7 +12,19 @@
       scene: 'assets/morning.svg', label: 'UNIT 01 · 早晨线索',
       intro: '清晨的能量钟停住了。帮探员按顺序找回今天的五个动作。',
       words: ['get up', 'brush my teeth', 'wash my face', 'get dressed', 'have breakfast'],
-      grammar: { title: '句子密码', pattern: ['I', '+', '动作'], example: 'I get up.', note: '说自己做什么：先说 I，再说动作。' },
+      grammar: {
+        title: '句子密码 · 谁 + 动作',
+        pattern: ['I / You / He / She / It', '+', '动作'],
+        note: '先找到是谁，再说做什么。I 是我，You 是你或你们，He 是他，She 是她，It 是它（小机器人也可以用 It）。',
+        extensions: [
+          { label: '我', english: 'I get up.', chinese: '我起床。' },
+          { label: '你 / 你们', english: 'You get up.', chinese: '你 / 你们起床。' },
+          { label: '他', english: 'He gets up.', chinese: '他起床。' },
+          { label: '她', english: 'She gets up.', chinese: '她起床。' },
+          { label: '它 · 小机器人', english: 'It gets up.', chinese: '它起床。' }
+        ],
+        tip: '小尾巴提醒：He、She、It 后面的动作会多一个 s：get → gets。先听、先模仿，不用记复杂名称。'
+      },
       phonics: { letter: 'm', sample: 'morning, my', title: '听一听开头音', text: 'morning、my 都从 /m/ 开始。听到 /m/，把它留在探员背包里。' },
       tasks: [
         { type: 'listen', label: '第一条线索 · 听一听', title: '哪一张图是 “get up”？', prompt: '先听声音，再选择正确的动作。', audio: 'get up', options: [
@@ -30,7 +42,18 @@
       scene: 'assets/room.svg', label: 'UNIT 02 · 房间线索',
       intro: '基地里的小物品换了位置。跟着位置词，帮探员整理房间。',
       words: ['on the desk', 'in the box', 'under the bed'],
-      grammar: { title: '句子密码', pattern: ['物品', '+ is +', '位置'], example: 'The book is on the desk.', note: '说一个物品在哪里：物品后面用 is，再说位置。' },
+      grammar: {
+        title: '句子密码 · 问一问',
+        pattern: ['问题词', '+', '小问句'],
+        note: 'Where 问在哪里，What 问是什么，When 问什么时候，How 问怎么样。它们是围绕本关词组的可选侦探挑战，不影响主线通关。',
+        extensions: [
+          { label: 'Where · 哪里', english: 'Where is the book?', answer: 'It is on the desk.', chinese: '书在哪里？它在书桌上。' },
+          { label: 'What · 什么', english: 'What is it?', answer: 'It is a pencil.', chinese: '它是什么？它是一支铅笔。' },
+          { label: 'When · 什么时候', english: 'When do you get up?', answer: 'I get up in the morning.', chinese: '你什么时候起床？我早上起床。' },
+          { label: 'How · 怎么样', english: 'How is your room?', answer: 'It is tidy.', chinese: '你的房间怎么样？它很整洁。' }
+        ],
+        tip: '先听问题词，再想它在问什么；听到 Where 就找位置，听到 What 就找物品。'
+      },
       phonics: { letter: 'b', sample: 'book, box, bed', title: '听一听开头音', text: 'book、box、bed 都从 /b/ 开始。找到三个 /b/ 线索。' },
       tasks: [
         { type: 'listen', label: '第一条线索 · 听一听', title: 'Where is the book?', prompt: '听问题，找到书的位置。', audio: 'The book is on the desk.', options: [
@@ -192,7 +215,11 @@
   }
 
   function renderGrammar(grammar) {
-    return '<div class="grammar-card"><div><strong>' + grammar.title + '</strong><p>' + grammar.note + '</p></div><div class="grammar-pattern">' + grammar.pattern.map(function (part) { return '<span>' + part + '</span>'; }).join('') + '</div><button type="button" data-action="speak" data-speak="' + esc(grammar.example) + '">听例句</button></div>';
+    const examples = (grammar.extensions || []).map(function (item) {
+      const spokenText = item.english + (item.answer ? ' ' + item.answer : '');
+      return '<li class="grammar-example"><div class="grammar-example-copy"><span class="grammar-label">' + esc(item.label) + '</span><strong>' + esc(item.english) + '</strong>' + (item.answer ? '<span class="grammar-answer">' + esc(item.answer) + '</span>' : '') + '<small>' + esc(item.chinese) + '</small></div><button type="button" data-action="speak" data-speak="' + esc(spokenText) + '" aria-label="播放：' + esc(spokenText) + '" title="播放这组英语"><i data-lucide="volume-2">🔊</i><span>听一听</span></button></li>';
+    }).join('');
+    return '<section class="grammar-card" aria-label="' + esc(grammar.title) + '"><div class="grammar-head"><div><span class="grammar-kicker">可选拓展 · 不影响通关</span><h3>' + esc(grammar.title) + '</h3><p>' + esc(grammar.note) + '</p></div><div class="grammar-pattern">' + grammar.pattern.map(function (part) { return '<span>' + esc(part) + '</span>'; }).join('') + '</div></div><ul class="grammar-example-list">' + examples + '</ul><p class="grammar-tip"><strong>探员提示</strong>' + esc(grammar.tip) + '</p></section>';
   }
 
   function renderPhonics(phonics) { return '<div class="phonics"><div class="phonics-mark">/' + phonics.letter + '/</div><div><strong>' + phonics.title + '</strong><p>' + phonics.text + '</p></div><button type="button" data-action="speak" data-speak="' + esc(phonics.sample) + '">听词</button></div>'; }
