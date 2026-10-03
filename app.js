@@ -151,6 +151,11 @@
 
   function speak(text) {
     if (!state.sound) return false;
+    if (window.AndroidTts && typeof window.AndroidTts.speak === 'function') {
+      window.AndroidTts.speak(String(text));
+      return true;
+    }
+    if (window.TownAudio && window.TownAudio.play(text)) return true;
     if (!('speechSynthesis' in window) || !window.SpeechSynthesisUtterance) {
       const status = document.getElementById('cloud-status');
       if (status) status.textContent = '当前平板浏览器不支持网页朗读，请使用系统浏览器打开。';
