@@ -58,6 +58,34 @@
   function entry(data, role, amount, reason, source) {
     if (!data.ledger.some(x => x.child_id === role && x.source_key === source)) data.ledger.push({ id: id(), child_id: role, amount, reason, source_key: source, created_at: now() });
   }
+  function unitName(unit) {
+    if (unit === 'morning') return 'My morning';
+    if (unit === 'room') return 'My room';
+    return window.TownUnitContent && window.TownUnitContent[unit] ? window.TownUnitContent[unit].name : unit;
+  }
+  function resetEvents(data, role, unit) {
+    return data.events.filter(x => x && x.type === 'learning-reset' && x.child_id === role && Array.isArray(x.unit_ids) && x.unit_ids.includes(unit));
+  }
+  function latestReset(data, role, unit) {
+    return resetEvents(data, role, unit).slice().sort((a, b) => Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0))[0] || null;
+  }
+  function currentFirstEntries(data, role, unit) {
+    const reset = latestReset(data, role, unit);
+    const prefix = 'stage:first:' + unit + ':';
+    return data.ledger.filter(x => x.child_id === role && x.amount > 0 && typeof x.source_key === 'string' && x.source_key.startsWith(prefix) && (reset ? x.source_key.endsWith(':replay:' + reset.id) : !x.source_key.includes(':replay:')))
+      .reduce((latest, x) => {
+        const stage = x.source_key.slice(prefix.length).split(':')[0];
+        if (!latest[stage] || Date.parse(x.created_at || 0) > Date.parse(latest[stage].created_at || 0)) latest[stage] = x;
+        return latest;
+      }, {});
+  }
+  function resetPreview(data, role, units) {
+    child(role);
+    return Array.from(new Set(units || [])).map(unit => {
+      const entries = currentFirstEntries(data, role, unit);
+      return { unit, points: Object.values(entries).reduce((sum, x) => sum + x.amount, 0) };
+    });
+  }
   function text(value, max, required) {
     const result = String(value || '').trim();
     if (result.length > max || (required && !result)) throw new Error('请检查名称或备注长度。');
@@ -77,12 +105,34 @@
       const content = window.TownUnitContent && window.TownUnitContent[unit];
       if (!(['morning', 'room'].includes(unit) || content) || !scores[stage]) return Promise.reject(new Error('学习关卡无效。'));
       return transaction(s => {
-        const source = 'stage:first:' + unit + ':' + stage;
-        if (s.ledger.some(x => x.child_id === role && x.source_key === source)) return false;
+        const reset = latestReset(s, role, unit);
+        const prefix = 'stage:first:' + unit + ':' + stage;
+        const source = reset ? prefix + ':replay:' + reset.id : prefix;
+        if (s.ledger.some(x => x.child_id === role && x.amount > 0 && x.source_key === source)) return false;
         s.events.push({ id: id(), child_id: role, unit_id: unit, stage_id: stage, wrong_count: Math.max(0, wrong || 0), created_at: now() });
         const unitName = unit === 'morning' ? '早晨' : unit === 'room' ? '房间' : content.zh;
         entry(s, role, scores[stage], unitName + ' · ' + names[stage], source);
         return true;
+      });
+    },
+    resetPreview(role, units) {
+      const s = load();
+      return resetPreview(s, role, units);
+    },
+    resetLearning(role, units) {
+      child(role);
+      const requested = Array.from(new Set((units || []).filter(Boolean).map(String)));
+      if (!requested.length || requested.length > 30) return Promise.reject(new Error('请选择需要重置的学习单元。'));
+      return transaction(s => {
+        parent(s);
+        const preview = resetPreview(s, role, requested);
+        const resetId = id();
+        const total = preview.reduce((sum, item) => sum + item.points, 0);
+        preview.forEach(item => {
+          if (item.points > 0) entry(s, role, -item.points, '重置学习：' + unitName(item.unit), 'reset:learning:' + resetId + ':' + item.unit);
+        });
+        s.events.push({ id: resetId, type: 'learning-reset', child_id: role, unit_ids: requested, points: total, created_at: now() });
+        return { resetId, units: preview, total };
       });
     },
     submitWish(role, title, description) {
