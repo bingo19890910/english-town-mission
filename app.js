@@ -96,6 +96,8 @@
   let recordingRequested = false;
   let recordingStream = null;
   let recordingEpoch = 0;
+  let speechVoices = [];
+  let speechReady = false;
 
   const view = document.getElementById('view');
   const insight = document.getElementById('insight');
@@ -139,14 +141,45 @@
     if (window.lucide && window.lucide.createIcons) window.lucide.createIcons({ attrs: { 'stroke-width': 1.8 } });
   }
 
+  function initSpeech() {
+    if (!('speechSynthesis' in window) || speechReady) return;
+    speechReady = true;
+    const refreshVoices = function () { speechVoices = window.speechSynthesis.getVoices() || []; };
+    refreshVoices();
+    if (window.speechSynthesis.addEventListener) window.speechSynthesis.addEventListener('voiceschanged', refreshVoices);
+  }
+
   function speak(text) {
-    if (!state.sound || !('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = /[\u3400-\u9fff]/.test(text) ? 'zh-CN' : 'en-US';
-    utterance.rate = 0.76;
-    utterance.pitch = 1.02;
-    window.speechSynthesis.speak(utterance);
+    if (!state.sound) return false;
+    if (!('speechSynthesis' in window) || !window.SpeechSynthesisUtterance) {
+      const status = document.getElementById('cloud-status');
+      if (status) status.textContent = '当前平板浏览器不支持网页朗读，请使用系统浏览器打开。';
+      return false;
+    }
+    initSpeech();
+    const isChinese = /[\u3400-\u9fff]/.test(text);
+    const lang = isChinese ? 'zh-CN' : 'en-US';
+    const candidates = speechVoices.filter(function (voice) { return voice.lang && voice.lang.toLowerCase().indexOf(isChinese ? 'zh' : 'en') === 0; });
+    const voice = candidates.find(function (item) { return item.lang.toLowerCase() === lang.toLowerCase(); }) || candidates[0];
+    try {
+      window.speechSynthesis.cancel();
+      if (window.speechSynthesis.resume) window.speechSynthesis.resume();
+      const utterance = new SpeechSynthesisUtterance(String(text));
+      utterance.lang = lang;
+      if (voice) utterance.voice = voice;
+      utterance.rate = 0.76;
+      utterance.pitch = 1.02;
+      utterance.onerror = function () {
+        const status = document.getElementById('cloud-status');
+        if (status) status.textContent = '声音播放失败，请点右上角声音按钮测试，或检查平板静音开关。';
+      };
+      window.speechSynthesis.speak(utterance);
+      return true;
+    } catch (error) {
+      const status = document.getElementById('cloud-status');
+      if (status) status.textContent = '声音暂时不可用，请检查平板静音开关后重试。';
+      return false;
+    }
   }
 
   function setActiveNav(name) {
@@ -358,7 +391,28 @@
 
   function renderWallet() {
     stopActiveRecording(); currentUnit = null; setActiveNav('wallet'); crumb.textContent = '积分心愿'; renderProfiles(); renderInsight();
-    window.TownRewards.mount(view, { profile: activeProfile, backup: function () { return structuredClone(state); }, legacy: legacyProgress });
+    window.TownRewards.mount(view, {
+      profile: activeProfile,
+      backup: function () { return structuredClone(state); },
+      legacy: legacyProgress,
+      units: function () { return unitOrder.map(function (id) { return { id: id, number: units[id].number, name: units[id].name, completed: false }; }); },
+      progress: function (role) { return structuredClone(state.progress[role]); },
+      resetProgress: async function (role, ids) {
+        const result = await window.TownLocal.resetLearning(role, ids);
+        const progress = state.progress[role];
+        const resetIds = new Set(ids);
+        resetIds.forEach(function (unitId) {
+          delete progress.stages[unitId];
+          delete progress.reviewDue[unitId];
+          delete progress.errors[unitId];
+        });
+        progress.completed = progress.completed.filter(function (unitId) { return !resetIds.has(unitId); });
+        progress.last = progress.completed.length ? units[progress.completed[progress.completed.length - 1]].name : '';
+        saveState();
+        currentUnit = null;
+        return result;
+      }
+    });
     refreshIcons();
   }
 
@@ -469,7 +523,12 @@
   function shuffle(array) { for (let i = array.length - 1; i > 0; i -= 1) { const j = Math.floor(Math.random() * (i + 1)); const temp = array[i]; array[i] = array[j]; array[j] = temp; } return array; }
 
   document.querySelectorAll('[data-action="hub"], [data-action="roadmap"], [data-action="review"], [data-action="wallet"], [data-action="parent"]').forEach(function (button) { button.addEventListener('click', function () { if (button.dataset.action === 'hub') renderHub(); if (button.dataset.action === 'roadmap') renderRoadmap(); if (button.dataset.action === 'review') renderReview(); if (button.dataset.action === 'wallet') renderWallet(); if (button.dataset.action === 'parent') renderParent(); }); });
-  document.querySelector('[data-action="sound"]').addEventListener('click', function () { state.sound = !state.sound; saveState(); document.querySelector('.sound-button').classList.toggle('off', !state.sound); if (!state.sound && 'speechSynthesis' in window) window.speechSynthesis.cancel(); });
+  initSpeech();
+  document.querySelector('[data-action="sound"]').addEventListener('click', function () {
+    state.sound = !state.sound; saveState(); document.querySelector('.sound-button').classList.toggle('off', !state.sound);
+    if (!state.sound && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (state.sound) speak('Hello, explorers!');
+  });
   document.querySelector('.sound-button').classList.toggle('off', !state.sound);
   window.addEventListener('pagehide', stopActiveRecording);
   document.getElementById('today').textContent = todayText();
