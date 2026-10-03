@@ -1,0 +1,49 @@
+name: Build Android APK
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'android-app/**'
+      - '04_Deliverables/**'
+      - '.github/workflows/build-apk.yml'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK platform
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Copy offline web assets
+        shell: bash
+        run: |
+          mkdir -p android-app/app/src/main/assets
+          cp 04_Deliverables/index.html 04_Deliverables/styles.css 04_Deliverables/app.js 04_Deliverables/local-family.js 04_Deliverables/rewards.js 04_Deliverables/unit-content.js 04_Deliverables/teaching-demos.js 04_Deliverables/grammar-roadmap.js android-app/app/src/main/assets/
+          cp -R 04_Deliverables/assets android-app/app/src/main/assets/
+      - name: Build debug APK
+        working-directory: android-app
+        run: gradle --no-daemon assembleDebug
+      - name: Rename APK for release
+        run: cp android-app/app/build/outputs/apk/debug/app-debug.apk android-app/app/build/outputs/apk/debug/english-town-mission.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: english-town-mission-android-debug
+          path: android-app/app/build/outputs/apk/debug/english-town-mission.apk
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-v1.0.0
+          name: 英语小城 Android 安装包 v1.0.0
+          body: |
+            Android APK，适用于 Android 6.0 及以上平板。
+            首次安装需要允许浏览器安装未知来源应用。
+            语音使用平板已安装的 Android TTS 引擎；如提示缺少英语语音数据，请到系统文字转语音设置安装。
+            学习进度保存在本机应用存储中，与网页浏览器记录不互通。
+          files: android-app/app/build/outputs/apk/debug/english-town-mission.apk
+          overwrite_files: true
+          make_latest: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
